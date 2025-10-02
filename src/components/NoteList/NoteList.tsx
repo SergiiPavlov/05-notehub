@@ -1,27 +1,33 @@
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation, keepPreviousData } from '@tanstack/react-query';
 import css from './NoteList.module.css';
-import { fetchNotes, deleteNote } from '../../services/noteService';
+import { fetchNotes, deleteNote, type FetchNotesResponse } from '../../services/noteService';
 import type { Note } from '../../types/note';
 import { useEffect, useRef } from 'react';
 import Loader from '../Loader/Loader';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import { toast } from 'react-hot-toast';
-import { getErrorMessage } from '../../utils/errors'; 
+import { getErrorMessage } from '../../utils/errors';
 
 export interface NoteListProps {
   page: number;
   search: string;
   onPageCount?: (totalPages: number) => void;
-  enterTick?: number; // ← новое: сигнал, что нажали Enter
+  enterTick?: number; // сигнал, что нажали Enter в поле поиска
 }
 
 export default function NoteList({ page, search, onPageCount, enterTick }: NoteListProps) {
   const qc = useQueryClient();
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<FetchNotesResponse, Error>({
     queryKey: ['notes', { page, search }],
     queryFn: () => fetchNotes({ page, perPage: 12, search }),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData, // v5-замена keepPreviousData: true
   });
 
   useEffect(() => {
@@ -39,26 +45,29 @@ export default function NoteList({ page, search, onPageCount, enterTick }: NoteL
     },
   });
 
-  // ← логика "Enter → пусто → показать тост"
+  
   const prevTick = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (enterTick !== undefined && prevTick.current !== enterTick) {
       prevTick.current = enterTick;
       if (data && Array.isArray(data.notes) && data.notes.length === 0) {
-        // Пустая выборка именно после нажатия Enter
         toast.error('Ничего не найдено по запросу');
       }
     }
   }, [enterTick, data]);
 
   if (isLoading) return <Loader message="Loading notes…" />;
+
   if (isError)
     return (
       <ErrorMessage
         message={getErrorMessage(error, 'Failed to load notes')}
-        onRetry={() => refetch()}
+        onRetry={() => {
+          refetch();
+        }}
       />
     );
+
   if (!data || data.notes.length === 0) return null;
 
   const notes = data.notes as Note[];
