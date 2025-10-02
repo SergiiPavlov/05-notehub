@@ -12,3 +12,10 @@
 .vscode
 .DS_Store
 tsconfig.tsbuildinfo
+
+# HW-05 local stuff
+.env
+.env.*
+.vite/
+dist/
+node_modules/
