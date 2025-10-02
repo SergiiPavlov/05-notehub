@@ -1,7 +1,7 @@
 {
-  "name": "04-react-query",
+  "name": "05-notehub",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,10 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hot-toast": "2.6.0",
-    "react-paginate": "8.3.0"
+    "react-paginate": "8.3.0",
+    "formik": "^2.4.6",
+    "yup": "^1.4.0",
+    "use-debounce": "^9.0.4"
   },
   "devDependencies": {
     "@types/react": "^19.1.13",
