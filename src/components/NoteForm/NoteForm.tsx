@@ -1,11 +1,13 @@
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { Formik, Form, Field, ErrorMessage as FormikError } from 'formik';
 import * as Yup from 'yup';
 import css from './NoteForm.module.css';
 import { createNote } from '../../services/noteService';
 import type { NoteTag } from '../../types/note';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { getErrorMessage } from '../../utils/errors';
 
-interface NoteFormProps {
+export interface NoteFormProps {
   onCreated: () => void;
   onCancel: () => void;
 }
@@ -20,6 +22,7 @@ const schema = Yup.object({
 
 export default function NoteForm({ onCreated, onCancel }: NoteFormProps) {
   const qc = useQueryClient();
+
   return (
     <Formik
       initialValues={{ title: '', content: '', tag: 'Todo' as NoteTag }}
@@ -28,9 +31,10 @@ export default function NoteForm({ onCreated, onCancel }: NoteFormProps) {
         try {
           await createNote(values);
           await qc.invalidateQueries({ queryKey: ['notes'] });
+          toast.success('Note created');
           onCreated();
         } catch (e) {
-          // noop
+          toast.error('Failed to create note');
         } finally {
           helpers.setSubmitting(false);
         }
@@ -41,13 +45,13 @@ export default function NoteForm({ onCreated, onCancel }: NoteFormProps) {
           <div className={css.formGroup}>
             <label htmlFor="title">Title</label>
             <Field id="title" name="title" type="text" className={css.input} />
-            <ErrorMessage name="title" component="span" className={css.error} />
+            <FormikError name="title" component="span" className={css.error} />
           </div>
 
           <div className={css.formGroup}>
             <label htmlFor="content">Content</label>
             <Field as="textarea" id="content" name="content" rows={8} className={css.textarea} />
-            <ErrorMessage name="content" component="span" className={css.error} />
+            <FormikError name="content" component="span" className={css.error} />
           </div>
 
           <div className={css.formGroup}>
@@ -59,7 +63,7 @@ export default function NoteForm({ onCreated, onCancel }: NoteFormProps) {
                 </option>
               ))}
             </Field>
-            <ErrorMessage name="tag" component="span" className={css.error} />
+            <FormikError name="tag" component="span" className={css.error} />
           </div>
 
           <div className={css.actions}>
