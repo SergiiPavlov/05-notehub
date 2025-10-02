@@ -1,24 +1,14 @@
 import ReactPaginate from 'react-paginate';
 import css from './Pagination.module.css';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { fetchNotes, type FetchNotesResponse } from '../../services/noteService';
 
-interface PaginationProps {
+export interface PaginationProps {
   currentPage: number;
   onPageChange: (page: number) => void;
-  search: string;
+  totalPages: number;
 }
 
-export default function Pagination({ currentPage, onPageChange, search }: PaginationProps) {
-  const { data } = useQuery<FetchNotesResponse, Error>({
-    queryKey: ['notes', { page: currentPage, search }],
-    queryFn: () => fetchNotes({ page: currentPage, perPage: 12, search }),
-    placeholderData: keepPreviousData, // v5
-    staleTime: 1000,
-  });
-
-  const pageCount = Math.max(1, data?.totalPages ?? 1);
-  if (!data || pageCount <= 1) return null;
+export default function Pagination({ currentPage, onPageChange, totalPages }: PaginationProps) {
+  if (!totalPages || totalPages <= 1) return null;
 
   return (
     <ReactPaginate
@@ -29,7 +19,7 @@ export default function Pagination({ currentPage, onPageChange, search }: Pagina
       previousLabel="<"
       nextLabel=">"
       breakLabel="..."
-      pageCount={pageCount}
+      pageCount={totalPages}
       forcePage={currentPage - 1}
       onPageChange={(sel: { selected: number }) => onPageChange(sel.selected + 1)}
     />
