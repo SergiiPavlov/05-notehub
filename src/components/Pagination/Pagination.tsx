@@ -6,17 +6,20 @@ import { fetchNotes } from '../../services/noteService';
 interface PaginationProps {
   currentPage: number;
   onPageChange: (page: number) => void;
+  search: string; // ← добавлено
 }
 
-export default function Pagination({ currentPage, onPageChange, search = '' }: PaginationProps) {
-  // Peek the latest total pages for a pleasant UX
+export default function Pagination({ currentPage, onPageChange, search }: PaginationProps) {
+  // Получаем актуальное количество страниц под текущий фильтр
   const { data } = useQuery({
-    queryKey: ['notes', { page: currentPage }],
-    queryFn: () => fetchNotes({ page: currentPage, perPage: 12 }),
-    staleTime: 1000, 
+    queryKey: ['notes', { page: currentPage, search }], // ← учитываем search
+    queryFn: () => fetchNotes({ page: currentPage, perPage: 12, search }), // ← передаём search
+    keepPreviousData: true,
+    staleTime: 1000,
   });
-  const pageCount = data?.totalPages ?? 0;
-  if (!pageCount || pageCount <= 1) return null;
+
+  const pageCount = Math.max(1, data?.totalPages ?? 1);
+  if (!data || pageCount <= 1) return null; // ← рендерим, только если > 1 страниц
 
   return (
     <ReactPaginate
