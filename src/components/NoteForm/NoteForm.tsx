@@ -3,7 +3,7 @@ import * as Yup from 'yup';
 import css from './NoteForm.module.css';
 import { createNote } from '../../services/noteService';
 import type { NoteTag } from '../../types/note';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { getErrorMessage } from '../../utils/errors';
 
@@ -12,32 +12,37 @@ export interface NoteFormProps {
   onCancel: () => void;
 }
 
-const tags: NoteTag[] = ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'];
+const tags: NoteTag[] = ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as const;
 
 const schema = Yup.object({
-  title: Yup.string().min(3).max(50).required('Required'),
-  content: Yup.string().max(500),
-  tag: Yup.mixed<NoteTag>().oneOf(tags).required('Required'),
+  title: Yup.string().min(3, 'Min 3').max(50, 'Max 50').required('Required'),
+  content: Yup.string().max(500, 'Max 500'),
+  tag: Yup.mixed<NoteTag>().oneOf(tags, 'Invalid').required('Required'),
 });
 
 export default function NoteForm({ onCreated, onCancel }: NoteFormProps) {
   const qc = useQueryClient();
 
+  const create = useMutation({
+    mutationFn: createNote,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['notes'] });
+      toast.success('Note created');
+      onCreated();
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, 'Failed to create note'));
+    },
+  });
+
   return (
     <Formik
       initialValues={{ title: '', content: '', tag: 'Todo' as NoteTag }}
       validationSchema={schema}
-      onSubmit={async (values, helpers) => {
-        try {
-          await createNote(values);
-          await qc.invalidateQueries({ queryKey: ['notes'] });
-          toast.success('Note created');
-          onCreated();
-        } catch (e) {
-          toast.error('Failed to create note');
-        } finally {
-          helpers.setSubmitting(false);
-        }
+      onSubmit={(values, helpers) => {
+        create.mutate(values, {
+          onSettled: () => helpers.setSubmitting(false),
+        });
       }}
     >
       {({ isSubmitting }) => (
@@ -70,7 +75,7 @@ export default function NoteForm({ onCreated, onCancel }: NoteFormProps) {
             <button type="button" className={css.cancelButton} onClick={onCancel}>
               Cancel
             </button>
-            <button type="submit" className={css.submitButton} disabled={isSubmitting}>
+            <button type="submit" className={css.submitButton} disabled={isSubmitting || create.isPending}>
               Create note
             </button>
           </div>
