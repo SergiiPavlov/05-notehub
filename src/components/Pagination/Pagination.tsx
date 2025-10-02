@@ -1,25 +1,24 @@
 import ReactPaginate from 'react-paginate';
 import css from './Pagination.module.css';
-import { useQuery } from '@tanstack/react-query';
-import { fetchNotes } from '../../services/noteService';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { fetchNotes, type FetchNotesResponse } from '../../services/noteService';
 
 interface PaginationProps {
   currentPage: number;
   onPageChange: (page: number) => void;
-  search: string; // ← добавлено
+  search: string;
 }
 
 export default function Pagination({ currentPage, onPageChange, search }: PaginationProps) {
-  // Получаем актуальное количество страниц под текущий фильтр
-  const { data } = useQuery({
-    queryKey: ['notes', { page: currentPage, search }], // ← учитываем search
-    queryFn: () => fetchNotes({ page: currentPage, perPage: 12, search }), // ← передаём search
-    keepPreviousData: true,
+  const { data } = useQuery<FetchNotesResponse, Error>({
+    queryKey: ['notes', { page: currentPage, search }],
+    queryFn: () => fetchNotes({ page: currentPage, perPage: 12, search }),
+    placeholderData: keepPreviousData, // v5
     staleTime: 1000,
   });
 
   const pageCount = Math.max(1, data?.totalPages ?? 1);
-  if (!data || pageCount <= 1) return null; // ← рендерим, только если > 1 страниц
+  if (!data || pageCount <= 1) return null;
 
   return (
     <ReactPaginate
